@@ -1,0 +1,20 @@
+# Python
+backend/venv/
+backend/**/__pycache__/
+*.pyc
+
+# Environment files
+backend/.env
+.env
+
+# ML models
+*.pt
+
+# Node
+frontend/node_modules/
+
+# General
+__pycache__/
+
+backend/bin/
+backend/static/audio/
