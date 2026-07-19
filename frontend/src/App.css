@@ -52,3 +52,55 @@
   color: #b7b3a9;
   font-size: 0.9rem;
 }
+
+.history-panel {
+  width: 100%;
+  max-width: 640px;
+  margin-top: 20px;
+  background: #1b1e26;
+  border-radius: 16px;
+  padding: 16px 20px;
+}
+
+.history-panel h2 {
+  font-size: 1.1rem;
+  margin: 0 0 12px;
+  color: #ffb37a;
+}
+
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.history-item {
+  background: #24283296;
+  padding: 10px 14px;
+  border-radius: 10px;
+}
+
+.history-label {
+  color: #8b8880;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.history-question,
+.history-answer {
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+
+.history-time {
+  font-size: 0.75rem;
+  color: #6b6860;
+  text-align: right;
+  margin-top: 4px;
+}

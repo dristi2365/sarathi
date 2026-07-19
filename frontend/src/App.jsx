@@ -11,8 +11,8 @@ function App() {
 
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
-  const detectionsRef = useRef([]); // always holds the LATEST detections
-  const isVoiceBusyRef = useRef(false); // true while recording or processing a voice question
+  const detectionsRef = useRef([]);
+  const isVoiceBusyRef = useRef(false);
 
   const [backendStatus, setBackendStatus] = useState("जाँच हुँदैछ...");
   const [cameraError, setCameraError] = useState(null);
@@ -23,6 +23,9 @@ function App() {
   const [voiceStatus, setVoiceStatus] = useState("");
   const [transcript, setTranscript] = useState("");
   const [answer, setAnswer] = useState("");
+
+  // NEW: conversation history — list of { question, answer } pairs
+  const [history, setHistory] = useState([]);
 
   // Backend health check
   useEffect(() => {
@@ -49,13 +52,12 @@ function App() {
     startCamera();
   }, []);
 
-  // Keep detectionsRef in sync so the mic handler always has the latest data
   useEffect(() => {
     detectionsRef.current = detections;
   }, [detections]);
 
   async function captureAndDetect() {
-    if (isVoiceBusyRef.current) return; // skip detection while handling voice
+    if (isVoiceBusyRef.current) return;
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -94,11 +96,11 @@ function App() {
   // ---------- VOICE LOOP ----------
 
   async function startRecording() {
-    isVoiceBusyRef.current = true; // pause background detection while we handle voice
-    setTranscript("");
-    setAnswer("");
-    setVoiceStatus("सुन्दैछु...");
+  setTranscript("");
+  setAnswer("");
+  setVoiceStatus("सुन्दैछु...");
 
+  try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const mediaRecorder = new MediaRecorder(stream);
     mediaRecorderRef.current = mediaRecorder;
@@ -109,14 +111,29 @@ function App() {
     };
 
     mediaRecorder.onstop = async () => {
-      stream.getTracks().forEach((track) => track.stop()); // release mic
+      stream.getTracks().forEach((track) => track.stop());
       const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+      console.log("RECORDED BLOB SIZE:", audioBlob.size, "bytes");
+      isVoiceBusyRef.current = true; // set busy only once recording actually finished
       await handleVoicePipeline(audioBlob);
     };
 
-    mediaRecorder.start();
+    mediaRecorder.onerror = (e) => {
+      console.error("MediaRecorder error:", e);
+      setVoiceStatus("त्रुटि भयो (माइक्रोफोन)। फेरि प्रयास गर्नुहोस्।");
+      isVoiceBusyRef.current = false;
+      setIsRecording(false);
+    };
+
+    mediaRecorder.start(250);
     setIsRecording(true);
+  } catch (err) {
+    console.error("Could not start recording:", err);
+    setVoiceStatus("माइक्रोफोन खोल्न सकिएन। अनुमति जाँच्नुहोस्।");
+    isVoiceBusyRef.current = false;
+    setIsRecording(false);
   }
+}
 
   function stopRecording() {
     if (mediaRecorderRef.current && isRecording) {
@@ -155,7 +172,7 @@ function App() {
         return;
       }
 
-      // 2. Ask the LLM using the LATEST detections
+      // 2. Ask the LLM
       setVoiceStatus("सोच्दैछु...");
       const askRes = await fetch(`${BACKEND_URL}/ask`, {
         method: "POST",
@@ -182,6 +199,12 @@ function App() {
         return;
       }
 
+      // NEW: add this Q&A pair to conversation history
+      setHistory((prev) => [
+        ...prev,
+        { question: question, answer: answerText, time: new Date().toLocaleTimeString() },
+      ]);
+
       // 3. Text-to-speech
       setVoiceStatus("बोल्दैछु...");
       const speakRes = await fetch(`${BACKEND_URL}/speak`, {
@@ -200,26 +223,34 @@ function App() {
       const speakData = await speakRes.json();
 
       if (speakData.audio_url && audioRef.current) {
-        audioRef.current.src = `${BACKEND_URL}${speakData.audio_url}`;
-        await audioRef.current.play();
-        setVoiceStatus("बोलिरहेको छ...");
-        audioRef.current.onended = () => {
-          setVoiceStatus("तयार");
-          isVoiceBusyRef.current = false; // resume detection after playback ends
-        };
-        resumedAlready = true; // don't resume early in finally, onended will do it
+        try {
+          audioRef.current.src = `${BACKEND_URL}${speakData.audio_url}`;
+          await audioRef.current.play();
+          setVoiceStatus("बोलिरहेको छ...");
+          audioRef.current.onended = () => {
+            setVoiceStatus("तयार");
+            isVoiceBusyRef.current = false;
+          };
+          resumedAlready = true;
+        } catch (playErr) {
+          console.error("Audio playback failed:", playErr);
+          setVoiceStatus("जवाफ बज्न सकेन।");
+          // resumedAlready stays false, so finally below resets the busy flag
+        }
       }
     } catch (err) {
       console.error("Voice pipeline failed:", err);
       setVoiceStatus("त्रुटि भयो। फेरि प्रयास गर्नुहोस्।");
     } finally {
       if (!resumedAlready) {
-        isVoiceBusyRef.current = false; // resume detection immediately
+        isVoiceBusyRef.current = false;
       }
+      setIsRecording(false); // resyncs mic button state no matter what happened
     }
   }
 
   function handleMicClick() {
+    console.log("MIC BUTTON CLICKED, isRecording:", isRecording);
     if (isRecording) {
       stopRecording();
     } else {
@@ -292,6 +323,29 @@ function App() {
           </ul>
         )}
       </div>
+
+      {/* NEW: Conversation history panel */}
+      {history.length > 0 && (
+        <div className="history-panel">
+          <h2>कुराकानी इतिहास</h2>
+          <ul className="history-list">
+            {history
+              .slice()
+              .reverse()
+              .map((item, index) => (
+                <li key={index} className="history-item">
+                  <div className="history-question">
+                    <span className="history-label">प्रश्न:</span> {item.question}
+                  </div>
+                  <div className="history-answer">
+                    <span className="history-label">जवाफ:</span> {item.answer}
+                  </div>
+                  <div className="history-time">{item.time}</div>
+                </li>
+              ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
