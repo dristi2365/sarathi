@@ -3,6 +3,7 @@ API routes for Sarathi.
 """
 
 from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
 
 from tracking.tracker import track_objects
@@ -28,7 +29,7 @@ async def detect(image: UploadFile = File(...)):
     try:
         image_bytes = await image.read()
         frame = bytes_to_frame(image_bytes)
-        detections = track_objects(frame)
+        detections = await run_in_threadpool(track_objects, frame)
         return {"count": len(detections), "detections": detections}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -40,7 +41,9 @@ async def detect(image: UploadFile = File(...)):
 async def speech_to_text(audio: UploadFile = File(...)):
     try:
         audio_bytes = await audio.read()
-        text = transcribe_audio(audio_bytes, filename_hint=audio.filename or "audio.wav")
+        text = await run_in_threadpool(
+            transcribe_audio, audio_bytes, audio.filename or "audio.wav"
+        )
         return {"text": text}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Transcription failed: {e}")
@@ -49,7 +52,7 @@ async def speech_to_text(audio: UploadFile = File(...)):
 @router.post("/ask")
 async def ask(payload: AskRequest):
     try:
-        answer = ask_llm(payload.question, payload.detections)
+        answer = await run_in_threadpool(ask_llm, payload.question, payload.detections)
         return {"answer": answer}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"LLM request failed: {e}")
@@ -62,7 +65,7 @@ async def speak(payload: SpeakRequest):
     path the frontend can use to play the audio.
     """
     try:
-        filename = synthesize_speech(payload.text)
+        filename = await run_in_threadpool(synthesize_speech, payload.text)
         return {"audio_url": f"/static/audio/{filename}"}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

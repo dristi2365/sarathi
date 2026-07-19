@@ -53,7 +53,12 @@ def transcribe_audio(audio_bytes: bytes, filename_hint: str = "audio.wav") -> st
         tmp_path = tmp.name
 
     try:
-        result = model.transcribe(tmp_path, language="ne", fp16=False)
+        result = model.transcribe(
+            tmp_path,
+            language="ne",
+            fp16=False,
+            initial_prompt="मेरो अगाडि के छ? देब्रे तिर के छ? दायाँ तिर के छ? कति टाढा छ?"
+        )
         return result["text"].strip()
     finally:
         os.remove(tmp_path)
