@@ -25,39 +25,38 @@ Sarathi uses a live camera feed to detect and track nearby objects, and lets use
 
 ## 🏗️ Project Structure
 
-```
 sarathi/
 ├── backend/
-│   ├── api/
-│   │   └── routes.py          # FastAPI route handlers
-│   ├── llm/
-│   │   ├── groq_client.py     # Groq API client
-│   │   └── prompt_builder.py  # System prompt + message formatting
-│   ├── speech/
-│   │   └── stt.py             # Whisper speech-to-text
-│   ├── tracking/
-│   │   └── tracker.py         # YOLOv8 + ByteTrack object tracking
-│   ├── tts/
-│   │   └── tts_engine.py      # gTTS text-to-speech
-│   ├── utils/
-│   │   └── frame_utils.py     # Image byte <-> OpenCV frame conversion
-│   ├── vision/
-│   │   └── detector.py        # (legacy) plain YOLOv8 detection, unused
-│   ├── static/audio/          # Generated TTS audio files (served statically)
-│   ├── bin/                   # Local ffmpeg binary (auto-copied at runtime)
-│   ├── main.py                # FastAPI app entrypoint
-│   ├── requirements.txt
-│   ├── yolov8n.pt             # YOLOv8 nano model weights
-│   └── .env                   # GROQ_API_KEY goes here
+│ ├── api/
+│ │ └── routes.py # FastAPI route handlers
+│ ├── llm/
+│ │ ├── groq_client.py # Groq API client
+│ │ └── prompt_builder.py # System prompt + message formatting
+│ ├── speech/
+│ │ └── stt.py # Whisper speech-to-text
+│ ├── tracking/
+│ │ └── tracker.py # YOLOv8 + ByteTrack object tracking
+│ ├── tts/
+│ │ └── tts_engine.py # gTTS text-to-speech
+│ ├── utils/
+│ │ └── frame_utils.py # Image byte <-> OpenCV frame conversion
+│ ├── vision/
+│ │ └── detector.py # (legacy) plain YOLOv8 detection, unused
+│ ├── static/audio/ # Generated TTS audio files (served statically)
+│ ├── bin/ # Local ffmpeg binary (auto-copied at runtime)
+│ ├── main.py # FastAPI app entrypoint
+│ ├── requirements.txt
+│ ├── yolov8n.pt # YOLOv8 nano model weights
+│ └── .env # GROQ_API_KEY goes here
 └── frontend/
-    ├── src/
-    │   ├── App.jsx            # Main React app (camera, mic, detections, Q&A)
-    │   ├── App.css
-    │   ├── main.jsx
-    │   └── index.css
-    ├── index.html
-    └── package.json
-```
+├── src/
+│ ├── App.jsx # Main React app (camera, mic, detections, Q&A)
+│ ├── App.css
+│ ├── main.jsx
+│ └── index.css
+├── index.html
+└── package.json
+
 
 ---
 
@@ -86,9 +85,8 @@ pip install -r requirements.txt
 
 Create a `.env` file inside `backend/` with:
 
-```
 GROQ_API_KEY=your_groq_api_key_here
-```
+
 
 Run the server (must be run from inside `backend/`, since model paths are relative):
 
@@ -116,7 +114,6 @@ Open the printed local URL (usually **http://localhost:5173**), and allow camera
 
 | Endpoint             | Method | Description                                              |
 |-----------------------|--------|------------------------------------------------------------|
-| `/status`             | GET    | Health check                                               |
 | `/detect`             | POST   | Accepts an image, returns tracked object detections        |
 | `/speech-to-text`     | POST   | Accepts audio, returns transcribed Nepali text              |
 | `/ask`                | POST   | Accepts a question + detections, returns a Nepali answer    |
