@@ -1,16 +1,26 @@
 # Python
 __pycache__/
+backend/**/__pycache__/
 *.pyc
 
 # Virtual Environment
 venv/
 .venv/
+backend/venv/
 
 # Environment Variables
 .env
+backend/.env
 
 # Model Files
 *.pt
+
+# Node
+frontend/node_modules/
+
+# Generated/runtime files
+backend/bin/
+backend/static/audio/
 
 # IDE
 .vscode/

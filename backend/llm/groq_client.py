@@ -39,8 +39,8 @@ def ask_llm(question: str, detections: list[dict]) -> str:
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_message},
         ],
-        temperature=0.3,
-        max_tokens=150,
+        temperature = 0.3,
+        max_tokens = 150,
     )
 
     return response.choices[0].message.content.strip()
